@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../shared/services/api.service';
@@ -89,18 +89,18 @@ export class VehicleListComponent implements OnInit {
   loading = true;
   error = '';
 
-  constructor(private api: ApiService, private zone: NgZone) {}
+  constructor(private api: ApiService) {}
 
   ngOnInit(): void {
     this.api.getVehicles().subscribe({
-      next: (v) => this.zone.run(() => {
+      next: (v) => {
         this.vehicles = v ?? [];
         this.loading = false;
-      }),
-      error: (err) => this.zone.run(() => {
+      },
+      error: (err) => {
         this.error = `Failed to load: ${err?.status ?? 'network error'}`;
         this.loading = false;
-      }),
+      },
     });
   }
 }

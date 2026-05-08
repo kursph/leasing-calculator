@@ -158,7 +158,7 @@ import { LeasingContract } from '../../shared/models';
   `,
 })
 export class AdminContractDetailComponent implements OnInit {
-  contract: (LeasingContract & { customer?: any; creditCheck?: any }) | null = null;
+  contract: LeasingContract | null = null;
   acting = false;
   showReject = false;
   rejectReason = '';
@@ -169,14 +169,14 @@ export class AdminContractDetailComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
-    this.api.adminGetContract(id).subscribe((c) => (this.contract = c as any));
+    this.api.adminGetContract(id).subscribe((c) => (this.contract = c));
   }
 
   approve(): void {
     if (!this.contract) return;
     this.acting = true;
     this.api.adminApprove(this.contract.id).subscribe({
-      next: (c) => { this.contract = c as any; this.message = 'Contract approved. Profitability record created.'; this.isError = false; this.acting = false; },
+      next: (c) => { this.contract = c; this.message = 'Contract approved. Profitability record created.'; this.isError = false; this.acting = false; },
       error: (err: any) => { this.message = err.error?.error || 'Approval failed'; this.isError = true; this.acting = false; },
     });
   }
@@ -185,7 +185,7 @@ export class AdminContractDetailComponent implements OnInit {
     if (!this.contract || !this.rejectReason) return;
     this.acting = true;
     this.api.adminReject(this.contract.id, this.rejectReason).subscribe({
-      next: (c) => { this.contract = c as any; this.message = 'Contract rejected. Customer notified.'; this.isError = false; this.acting = false; },
+      next: (c) => { this.contract = c; this.message = 'Contract rejected. Customer notified.'; this.isError = false; this.acting = false; },
       error: (err: any) => { this.message = err.error?.error || 'Rejection failed'; this.isError = true; this.acting = false; },
     });
   }

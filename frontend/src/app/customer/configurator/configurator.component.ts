@@ -1,4 +1,5 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
@@ -185,6 +186,8 @@ export class ConfiguratorComponent implements OnInit {
   error = '';
   form: ReturnType<FormBuilder['group']>;
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -202,7 +205,7 @@ export class ConfiguratorComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('vehicleId')!;
-    this.api.getVehicle(id).subscribe((v) => {
+    this.api.getVehicle(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((v) => {
       this.vehicle = v;
       this.cdr.detectChanges();
     });

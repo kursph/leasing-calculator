@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { calculateNoVA } from '../engine/NovaCalculator';
-
-const prisma = new PrismaClient();
 
 export async function listVehicles(_req: Request, res: Response): Promise<void> {
   const vehicles = await prisma.vehicle.findMany({
