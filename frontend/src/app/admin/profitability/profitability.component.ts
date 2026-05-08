@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
 import { ApiService } from '../../shared/services/api.service';
 import { Profitability } from '../../shared/models';
@@ -8,42 +8,99 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-profitability',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, PercentPipe],
+  imports: [CommonModule, CurrencyPipe, PercentPipe, RouterLink],
   template: `
-    <div class="max-w-3xl mx-auto p-6">
-      <div class="flex justify-between items-start mb-6">
-        <h1 class="text-3xl font-bold">Profitability Breakdown</h1>
-        @if (profitability) {
-          <button (click)="downloadPdf()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm">
-            Download PDF
-          </button>
-        }
-      </div>
-
+    <div class="page-sm">
       @if (profitability) {
-        <div class="bg-white rounded-lg shadow p-6 space-y-3">
-          <div class="flex justify-between items-center border-b pb-3">
-            <span class="text-lg font-semibold">Net Margin</span>
-            <span class="text-2xl font-bold" [class.text-green-600]="profitability.isProfit" [class.text-red-600]="!profitability.isProfit">
-              {{ profitability.netMargin | currency:'EUR' }}
-            </span>
+        <div class="section-header mb-8">
+          <div>
+            <a [routerLink]="['/admin/contracts', contractId]" class="text-xs text-slate-500 hover:text-indigo-600 mb-2 block">
+              ← Back to contract
+            </a>
+            <h1>Profitability Breakdown</h1>
+            <p class="text-sm text-slate-500 mt-1">Contract {{ contractId | slice:0:8 }}…</p>
           </div>
-          <dl class="space-y-2 text-sm">
-            <div class="flex justify-between"><dt class="text-gray-600">Margin %</dt><dd class="font-semibold">{{ profitability.marginPct | number:'1.2-2' }}%</dd></div>
-            <div class="flex justify-between"><dt class="text-gray-600">Spread (Nominal - EURIBOR)</dt><dd class="font-semibold text-blue-600">{{ (profitability.spread * 100) | number:'1.3-3' }}%</dd></div>
-            <hr>
-            <div class="flex justify-between"><dt class="text-gray-600">Total Payments Received</dt><dd>{{ profitability.totalPayments | currency:'EUR' }}</dd></div>
-            <div class="flex justify-between"><dt class="text-gray-600">Total Interest Income</dt><dd>{{ profitability.totalInterestIncome | currency:'EUR' }}</dd></div>
-            <div class="flex justify-between"><dt class="text-gray-600">Contract Fee Income (1%)</dt><dd>{{ profitability.contractFeeIncome | currency:'EUR' }}</dd></div>
-            <div class="flex justify-between"><dt class="text-gray-600">Residual Value Recovery</dt><dd>{{ profitability.residualValueIncome | currency:'EUR' }}</dd></div>
-            <hr>
-            <div class="flex justify-between text-red-600"><dt>Refinancing Cost</dt><dd>−{{ profitability.refinancingCost | currency:'EUR' }}</dd></div>
-            <div class="flex justify-between text-red-600"><dt>Operating Cost</dt><dd>−{{ profitability.operatingCost | currency:'EUR' }}</dd></div>
-          </dl>
-          <div class="pt-3 border-t">
-            <span class="text-sm font-medium px-3 py-1 rounded" [class]="profitability.isProfit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-              {{ profitability.isProfit ? 'PROFITABLE' : 'LOSS-MAKING' }}
-            </span>
+          <button (click)="downloadPdf()" class="btn-ghost">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            PDF Report
+          </button>
+        </div>
+
+        <!-- Net margin hero -->
+        <div class="card mb-5 flex items-center justify-between"
+          [class.border-emerald-200]="profitability.isProfit"
+          [class.bg-emerald-50]="profitability.isProfit"
+          [class.border-red-200]="!profitability.isProfit"
+          [class.bg-red-50]="!profitability.isProfit">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide"
+              [class.text-emerald-700]="profitability.isProfit"
+              [class.text-red-700]="!profitability.isProfit">
+              {{ profitability.isProfit ? 'Profitable Contract' : 'Loss-making Contract' }}
+            </p>
+            <p class="text-3xl font-bold mt-1"
+              [class.text-emerald-700]="profitability.isProfit"
+              [class.text-red-700]="!profitability.isProfit">
+              {{ profitability.netMargin | currency:'EUR' }}
+            </p>
+            <p class="text-sm mt-1"
+              [class.text-emerald-600]="profitability.isProfit"
+              [class.text-red-600]="!profitability.isProfit">
+              {{ profitability.marginPct | number:'1.2-2' }}% margin on GIK
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-slate-500">Spread</p>
+            <p class="text-2xl font-bold text-indigo-600">{{ (profitability.spread * 100) | number:'1.3-3' }}%</p>
+            <p class="text-xs text-slate-500 mt-0.5">Nominal − EURIBOR</p>
+          </div>
+        </div>
+
+        <!-- Income vs cost breakdown -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div class="card">
+            <h2 class="mb-4 text-emerald-700">Income</h2>
+            <div class="space-y-0">
+              <div class="dl-row">
+                <span class="dl-label">Total Payments</span>
+                <span class="dl-value text-emerald-600 font-semibold">{{ profitability.totalPayments | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">of which Interest</span>
+                <span class="dl-value">{{ profitability.totalInterestIncome | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Contract Fee (1%)</span>
+                <span class="dl-value">{{ profitability.contractFeeIncome | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Residual Value Recovery</span>
+                <span class="dl-value">{{ profitability.residualValueIncome | currency:'EUR' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="mb-4 text-red-600">Costs</h2>
+            <div class="space-y-0">
+              <div class="dl-row">
+                <span class="dl-label">Refinancing Cost (EURIBOR)</span>
+                <span class="dl-value text-red-600">{{ profitability.refinancingCost | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Operating Cost</span>
+                <span class="dl-value text-red-600">{{ profitability.operatingCost | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row border-t-2 border-slate-200 pt-2">
+                <span class="dl-label font-semibold">Net Margin</span>
+                <span class="font-bold" [class.text-emerald-600]="profitability.isProfit" [class.text-red-600]="!profitability.isProfit">
+                  {{ profitability.netMargin | currency:'EUR' }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       }
@@ -52,7 +109,7 @@ import { environment } from '../../../environments/environment';
 })
 export class ProfitabilityComponent implements OnInit {
   profitability: Profitability | null = null;
-  private contractId = '';
+  contractId = '';
 
   constructor(private route: ActivatedRoute, private api: ApiService) {}
 

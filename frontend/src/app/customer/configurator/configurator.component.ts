@@ -1,127 +1,174 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../shared/services/api.service';
 import { Vehicle, QuoteResult } from '../../shared/models';
 
 @Component({
   selector: 'app-configurator',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, CommonModule, CurrencyPipe, PercentPipe],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule, CurrencyPipe, PercentPipe, RouterLink],
   template: `
-    <div class="max-w-4xl mx-auto p-6">
-      <h1 class="text-3xl font-bold mb-2">Configure Your Lease</h1>
+    <div class="page">
+      <a routerLink="/customer/vehicles" class="text-xs text-slate-500 hover:text-indigo-600 mb-6 block">
+        ← Back to vehicles
+      </a>
+
       @if (vehicle) {
-        <p class="text-gray-500 mb-6">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</p>
+        <div class="section-header mb-8">
+          <div>
+            <h1>Configure Lease</h1>
+            <p class="text-slate-500 text-sm mt-1">
+              {{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.year }} ·
+              <span class="font-medium text-indigo-600">{{ vehicle.netPrice | currency:'EUR':'symbol':'1.0-0' }}</span>
+            </p>
+          </div>
+          @if (vehicle.co2Emissions === 0) {
+            <span class="badge-approved">Zero emission ⚡</span>
+          }
+        </div>
       }
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-xl font-semibold mb-4">Lease Parameters</h2>
-          <form [formGroup]="form" (ngSubmit)="calculate()" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Contract Type</label>
-              <select formControlName="contractType" class="mt-1 block w-full border rounded px-3 py-2">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Configuration form -->
+        <div class="card">
+          <h2 class="mb-6">Lease Parameters</h2>
+          <form [formGroup]="form" (ngSubmit)="calculate()" class="space-y-5">
+
+            <div class="field">
+              <label class="label">Contract Type</label>
+              <select formControlName="contractType" class="input">
                 <option value="VOLL_AMORTISATION">Full Amortisation (Vollamortisation)</option>
                 <option value="TEIL_AMORTISATION">Partial Amortisation (Teilamortisation)</option>
                 <option value="OPERATING">Operating Lease</option>
               </select>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Term (months)</label>
-              <input formControlName="termMonths" type="number" min="38" max="84"
-                class="mt-1 block w-full border rounded px-3 py-2" />
-              <p class="text-xs text-gray-400 mt-1">Min 38 / Max 84 months (PKW rules)</p>
+
+            <div class="field">
+              <label class="label">
+                Lease Term
+                <span class="font-normal text-slate-400 ml-1">38 – 84 months</span>
+              </label>
+              <div class="flex items-center gap-3">
+                <input formControlName="termMonths" type="number" min="38" max="84" class="input max-w-32" />
+                <span class="text-sm text-slate-500">months</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">PKW: min 40% / max 90% of 8yr useful life</p>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Advance Payment (EUR)</label>
-              <input formControlName="advancePayment" type="number" min="0"
-                class="mt-1 block w-full border rounded px-3 py-2" />
-              <p class="text-xs text-gray-400 mt-1">Max 30% of net price</p>
+
+            <div class="field">
+              <label class="label">
+                Advance Payment
+                <span class="font-normal text-slate-400 ml-1">max 30% of net price</span>
+              </label>
+              <div class="flex items-center gap-3">
+                <span class="text-slate-500 text-sm">EUR</span>
+                <input formControlName="advancePayment" type="number" min="0" class="input" />
+              </div>
+              @if (vehicle) {
+                <p class="text-xs text-slate-400 mt-1">
+                  Max: {{ vehicle.netPrice * 0.3 | currency:'EUR':'symbol':'1.0-0' }}
+                </p>
+              }
             </div>
+
             @if (form.get('contractType')?.value === 'TEIL_AMORTISATION') {
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Residual Value (EUR)</label>
-                <input formControlName="residualValue" type="number" min="0"
-                  class="mt-1 block w-full border rounded px-3 py-2" />
+              <div class="field">
+                <label class="label">Residual Value (EUR)</label>
+                <div class="flex items-center gap-3">
+                  <span class="text-slate-500 text-sm">EUR</span>
+                  <input formControlName="residualValue" type="number" min="0" class="input" />
+                </div>
               </div>
             }
+
             @if (form.get('contractType')?.value === 'OPERATING') {
-              <p class="text-xs text-amber-600 bg-amber-50 rounded p-2">
-                Operating lease: residual value is set by the lessor and not disclosed per Austrian tax law.
-              </p>
+              <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-700">
+                <p class="font-semibold mb-0.5">Operating Lease</p>
+                Residual value is determined by the lessor and not disclosed per Austrian tax law (EStR).
+              </div>
             }
-            @if (error) {
-              <p class="text-red-600 text-sm">{{ error }}</p>
-            }
-            <button type="submit" [disabled]="form.invalid || calculating"
-              class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
-              {{ calculating ? 'Calculating...' : 'Calculate Monthly Rate' }}
+
+            @if (error) { <div class="alert-error">{{ error }}</div> }
+
+            <button type="submit" [disabled]="form.invalid || calculating" class="btn-primary w-full">
+              @if (calculating) {
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+              }
+              {{ calculating ? 'Calculating…' : 'Calculate Monthly Rate' }}
             </button>
           </form>
         </div>
 
+        <!-- Quote result -->
         @if (quote) {
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4">Quote Summary (SECCI)</h2>
-            <dl class="space-y-2 text-sm">
-              <div class="flex justify-between">
-                <dt class="text-gray-600">Monthly Payment</dt>
-                <dd class="font-bold text-lg text-blue-600">{{ quote.monthlyPayment | currency:'EUR' }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-gray-600">GIK (Total Investment)</dt>
-                <dd class="font-semibold">{{ quote.gik | currency:'EUR' }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-gray-600">Nominal Rate (Sollzinssatz)</dt>
-                <dd>{{ quote.nominalRate | percent:'1.2-2' }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-gray-600">Effective Rate / APR</dt>
-                <dd>{{ quote.effectiveRate | percent:'1.2-2' }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-gray-600">Contract Stamp Duty</dt>
-                <dd>{{ quote.contractStampDuty | currency:'EUR' }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-gray-600">Total Cost</dt>
-                <dd class="font-semibold">{{ quote.totalCost | currency:'EUR' }}</dd>
-              </div>
-              <hr class="my-2">
-              <div class="flex justify-between">
-                <dt class="text-gray-600">NoVA Amount</dt>
-                <dd>{{ quote.novaBreakdown.novaAmount | currency:'EUR' }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-gray-600">NoVA Tax Rate</dt>
-                <dd>{{ quote.novaBreakdown.taxRate }}%</dd>
-              </div>
-            </dl>
+          <div class="card flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+              <h2>Quote Summary</h2>
+              <span class="badge-draft text-xs">SECCI · §6 VKrG</span>
+            </div>
 
-            <!-- SECCI acknowledgment gate (§6 VKrG) -->
-            <div class="mt-4 border rounded p-3 bg-gray-50">
-              <p class="text-xs text-gray-600 mb-2 font-medium">
-                Pre-contractual information (SECCI) — §6 VKrG 2010
-              </p>
-              <label class="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="secciAcknowledged" class="mt-0.5 rounded" />
-                <span>
-                  I confirm I have received and understood the pre-contractual information,
-                  including the nominal interest rate ({{ quote.nominalRate | percent:'1.2-2' }}),
-                  effective annual rate / APR ({{ quote.effectiveRate | percent:'1.2-2' }}),
-                  total cost ({{ quote.totalCost | currency:'EUR' }}),
-                  and contract stamp duty ({{ quote.contractStampDuty | currency:'EUR' }}).
+            <!-- Hero payment -->
+            <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-5 mb-5 text-center">
+              <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">Monthly Payment (advance)</p>
+              <p class="text-4xl font-bold text-indigo-700">{{ quote.monthlyPayment | currency:'EUR' }}</p>
+            </div>
+
+            <!-- Rate breakdown -->
+            <div class="space-y-0 flex-1 mb-5">
+              <div class="dl-row">
+                <span class="dl-label">Total Investment (GIK)</span>
+                <span class="dl-value font-semibold">{{ quote.gik | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Nominal Rate (Sollzinssatz)</span>
+                <span class="dl-value">{{ quote.nominalRate | percent:'1.3-3' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Effective Rate / APR</span>
+                <span class="dl-value font-semibold text-indigo-600">{{ quote.effectiveRate | percent:'1.3-3' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Contract Stamp Duty (1%)</span>
+                <span class="dl-value">{{ quote.contractStampDuty | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Total Cost</span>
+                <span class="dl-value font-semibold">{{ quote.totalCost | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">NoVA</span>
+                <span class="dl-value">{{ quote.novaBreakdown.novaAmount | currency:'EUR' }} ({{ quote.novaBreakdown.taxRate }}%)</span>
+              </div>
+            </div>
+
+            <!-- SECCI acknowledgment gate -->
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-4">
+              <p class="text-xs font-semibold text-slate-700 mb-2">Pre-contractual acknowledgment (§6 VKrG 2010)</p>
+              <label class="flex items-start gap-2.5 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="secciAcknowledged" class="mt-0.5 rounded text-indigo-600" />
+                <span class="text-xs text-slate-600 leading-relaxed">
+                  I confirm I have read and understood the pre-contractual information:
+                  nominal rate <strong>{{ quote.nominalRate | percent:'1.2-2' }}</strong>,
+                  APR <strong>{{ quote.effectiveRate | percent:'1.2-2' }}</strong>,
+                  total cost <strong>{{ quote.totalCost | currency:'EUR' }}</strong>.
                 </span>
               </label>
             </div>
 
-            <button (click)="applyNow()" [disabled]="!secciAcknowledged || applying"
-              class="mt-4 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50">
-              {{ applying ? 'Submitting...' : 'Apply for this Lease' }}
+            <button (click)="applyNow()" [disabled]="!secciAcknowledged || applying" class="btn-success w-full">
+              @if (applying) {
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+              }
+              {{ applying ? 'Submitting application…' : 'Apply for this Lease' }}
             </button>
           </div>
         }
@@ -170,7 +217,7 @@ export class ConfiguratorComponent implements OnInit {
       residualValue: residualValue!,
     }).subscribe({
       next: (q) => { this.quote = q; this.calculating = false; this.secciAcknowledged = false; },
-      error: (err) => { this.error = err.error?.message || 'Calculation failed'; this.calculating = false; },
+      error: (err) => { this.error = err.error?.message || err.error?.error || 'Calculation failed'; this.calculating = false; },
     });
   }
 
@@ -186,7 +233,7 @@ export class ConfiguratorComponent implements OnInit {
       residualValue: residualValue!,
     }).subscribe({
       next: (contract: any) => this.router.navigate(['/customer/application', contract.id]),
-      error: (err: any) => { this.error = err.error?.message || 'Application failed'; this.applying = false; },
+      error: (err: any) => { this.error = err.error?.message || err.error?.error || 'Application failed'; this.applying = false; },
     });
   }
 }

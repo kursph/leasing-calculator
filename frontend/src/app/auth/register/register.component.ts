@@ -9,38 +9,60 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [ReactiveFormsModule, CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gray-50">
-      <div class="max-w-md w-full bg-white p-8 rounded-lg shadow">
-        <h2 class="text-2xl font-bold text-center mb-6">Create Account</h2>
-        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">First Name</label>
-              <input formControlName="firstName" class="mt-1 block w-full border rounded px-3 py-2" />
+    <div class="min-h-[calc(100vh-5rem)] flex items-center justify-center p-4">
+      <div class="w-full max-w-md">
+
+        <div class="text-center mb-8">
+          <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-slate-900">Create your account</h1>
+          <p class="text-slate-500 text-sm mt-1">Start your leasing journey</p>
+        </div>
+
+        <div class="card">
+          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-5">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label class="label">First name</label>
+                <input formControlName="firstName" placeholder="Max" class="input" />
+              </div>
+              <div class="field">
+                <label class="label">Last name</label>
+                <input formControlName="lastName" placeholder="Mustermann" class="input" />
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Last Name</label>
-              <input formControlName="lastName" class="mt-1 block w-full border rounded px-3 py-2" />
+            <div class="field">
+              <label class="label">Email address</label>
+              <input formControlName="email" type="email" placeholder="you@example.com" class="input" />
             </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Email</label>
-            <input formControlName="email" type="email" class="mt-1 block w-full border rounded px-3 py-2" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Password</label>
-            <input formControlName="password" type="password" class="mt-1 block w-full border rounded px-3 py-2" />
-          </div>
-          @if (error) {
-            <p class="text-red-600 text-sm">{{ error }}</p>
-          }
-          <button type="submit" [disabled]="form.invalid || loading"
-            class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
-            {{ loading ? 'Creating...' : 'Register' }}
-          </button>
-        </form>
-        <p class="mt-4 text-center text-sm">
-          Have an account? <a routerLink="/auth/login" class="text-blue-600 hover:underline">Login</a>
+            <div class="field">
+              <label class="label">Password</label>
+              <input formControlName="password" type="password" placeholder="Min. 8 characters" class="input" />
+            </div>
+
+            @if (error) {
+              <div class="alert-error">{{ error }}</div>
+            }
+
+            <button type="submit" [disabled]="form.invalid || loading" class="btn-full mt-2">
+              @if (loading) {
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+              }
+              {{ loading ? 'Creating account…' : 'Create account' }}
+            </button>
+          </form>
+        </div>
+
+        <p class="text-center text-sm text-slate-500 mt-6">
+          Already have an account?
+          <a routerLink="/auth/login" class="text-indigo-600 font-medium hover:text-indigo-700">Sign in</a>
         </p>
       </div>
     </div>
@@ -65,10 +87,7 @@ export class RegisterComponent {
     this.loading = true;
     this.auth.register(this.form.value as any).subscribe({
       next: () => this.router.navigate(['/customer/vehicles']),
-      error: (err) => {
-        this.error = err.error?.error || 'Registration failed';
-        this.loading = false;
-      },
+      error: (err) => { this.error = err.error?.error || 'Registration failed'; this.loading = false; },
     });
   }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
 import { ApiService } from '../../shared/services/api.service';
 import { LeasingContract, ScheduleRow } from '../../shared/models';
@@ -8,52 +8,131 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-contract-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, PercentPipe],
+  imports: [CommonModule, CurrencyPipe, PercentPipe, RouterLink],
   template: `
-    <div class="max-w-4xl mx-auto p-6">
+    <div class="page">
       @if (contract) {
-        <div class="flex justify-between items-start mb-6">
+        <!-- Header -->
+        <div class="section-header mb-8">
           <div>
-            <h1 class="text-3xl font-bold">Contract Details</h1>
-            <p class="text-gray-500">{{ contract.vehicle?.make }} {{ contract.vehicle?.model }} — {{ contract.status }}</p>
+            <a routerLink="/customer/contracts" class="text-xs text-slate-500 hover:text-indigo-600 mb-2 block">
+              ← Back to contracts
+            </a>
+            <h1>{{ contract.vehicle?.make }} {{ contract.vehicle?.model }}</h1>
+            <div class="flex items-center gap-3 mt-2">
+              <span [class]="badgeClass(contract.status)">{{ contract.status }}</span>
+              <span class="text-xs text-slate-400">{{ contract.id | slice:0:8 }}…</span>
+            </div>
           </div>
-          <button (click)="downloadPdf()"
-            class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm font-medium">
+          <button (click)="downloadPdf()" class="btn-ghost">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
             Download PDF
           </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 bg-white rounded-lg shadow p-6 mb-6">
-          <div><p class="text-gray-500 text-sm">Monthly Payment</p><p class="text-xl font-bold text-blue-600">{{ contract.monthlyPayment | currency:'EUR' }}</p></div>
-          <div><p class="text-gray-500 text-sm">Total GIK</p><p class="font-semibold">{{ contract.gik | currency:'EUR' }}</p></div>
-          <div><p class="text-gray-500 text-sm">Nominal Rate</p><p>{{ contract.nominalRate | percent:'1.2-2' }}</p></div>
-          <div><p class="text-gray-500 text-sm">Effective Rate (APR)</p><p>{{ contract.effectiveRate | percent:'1.2-2' }}</p></div>
-          <div><p class="text-gray-500 text-sm">Term</p><p>{{ contract.termMonths }} months</p></div>
-          <div><p class="text-gray-500 text-sm">Contract Type</p><p>{{ contract.contractType }}</p></div>
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="stat-card">
+            <span class="stat-label">Monthly Payment</span>
+            <span class="stat-value text-indigo-600">{{ contract.monthlyPayment | currency:'EUR' }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total GIK</span>
+            <span class="stat-value">{{ contract.gik | currency:'EUR':'symbol':'1.0-0' }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Nominal Rate</span>
+            <span class="stat-value">{{ contract.nominalRate | percent:'1.2-2' }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">APR (Effective)</span>
+            <span class="stat-value">{{ contract.effectiveRate | percent:'1.2-2' }}</span>
+          </div>
         </div>
 
+        <!-- Details -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <div class="card">
+            <h2 class="mb-4">Contract Details</h2>
+            <div class="space-y-0">
+              <div class="dl-row">
+                <span class="dl-label">Contract Type</span>
+                <span class="dl-value">{{ contract.contractType }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Term</span>
+                <span class="dl-value">{{ contract.termMonths }} months</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Advance Payment</span>
+                <span class="dl-value">{{ contract.advancePayment | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Residual Value</span>
+                <span class="dl-value">{{ contract.residualValue | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Contract Stamp Duty</span>
+                <span class="dl-value">{{ contract.contractFee | currency:'EUR' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">VAT (20%)</span>
+                <span class="dl-value">{{ contract.vatAmount | currency:'EUR' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="mb-4">Interest Rate Components</h2>
+            <div class="space-y-0">
+              <div class="dl-row">
+                <span class="dl-label">EURIBOR Base</span>
+                <span class="dl-value">{{ contract.euriborRate | percent:'1.3-3' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Lender Components</span>
+                <span class="dl-value text-slate-400">—</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Nominal Rate (total)</span>
+                <span class="dl-value font-semibold">{{ contract.nominalRate | percent:'1.3-3' }}</span>
+              </div>
+              <div class="dl-row">
+                <span class="dl-label">Effective Rate / APR</span>
+                <span class="dl-value font-semibold text-indigo-600">{{ contract.effectiveRate | percent:'1.3-3' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amortization schedule -->
         @if (schedule.length > 0) {
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4">Amortization Schedule</h2>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="bg-gray-50">
-                    <th class="px-3 py-2 text-left">Period</th>
-                    <th class="px-3 py-2 text-right">Payment</th>
-                    <th class="px-3 py-2 text-right">Interest</th>
-                    <th class="px-3 py-2 text-right">Principal</th>
-                    <th class="px-3 py-2 text-right">Remaining Capital</th>
+          <div class="card p-0 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100">
+              <h2>Amortization Schedule</h2>
+              <p class="text-xs text-slate-400 mt-0.5">{{ schedule.length }} monthly payments · advance (vorschüssig) · 30/360</p>
+            </div>
+            <div class="overflow-x-auto max-h-96">
+              <table class="table">
+                <thead class="sticky top-0">
+                  <tr>
+                    <th>#</th>
+                    <th class="text-right">Payment</th>
+                    <th class="text-right">Interest</th>
+                    <th class="text-right">Principal</th>
+                    <th class="text-right">Remaining Capital</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (row of schedule; track row.period) {
-                    <tr class="border-t">
-                      <td class="px-3 py-1.5">{{ row.period }}</td>
-                      <td class="px-3 py-1.5 text-right">{{ row.payment | currency:'EUR' }}</td>
-                      <td class="px-3 py-1.5 text-right">{{ row.interest | currency:'EUR' }}</td>
-                      <td class="px-3 py-1.5 text-right">{{ row.principal | currency:'EUR' }}</td>
-                      <td class="px-3 py-1.5 text-right">{{ row.capitalAtPeriodEnd | currency:'EUR' }}</td>
+                    <tr>
+                      <td class="text-slate-400 font-mono text-xs">{{ row.period }}</td>
+                      <td class="text-right font-medium">{{ row.payment | currency:'EUR' }}</td>
+                      <td class="text-right text-amber-600">{{ row.interest | currency:'EUR' }}</td>
+                      <td class="text-right text-emerald-600">{{ row.principal | currency:'EUR' }}</td>
+                      <td class="text-right text-slate-600">{{ row.capitalAtPeriodEnd | currency:'EUR' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -83,5 +162,14 @@ export class ContractDetailComponent implements OnInit {
       `${environment.apiUrl}/leasing/contracts/${this.contractId}/pdf`,
       `contract-${this.contractId}.pdf`
     );
+  }
+
+  badgeClass(status: string): string {
+    const map: Record<string, string> = {
+      APPROVED: 'badge-approved', ACTIVE: 'badge-active',
+      UNDER_REVIEW: 'badge-review', REJECTED: 'badge-rejected',
+      DRAFT: 'badge-draft', CLOSED: 'badge-closed',
+    };
+    return map[status] ?? 'badge-draft';
   }
 }
