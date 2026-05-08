@@ -69,7 +69,7 @@ import { Vehicle, QuoteResult } from '../../shared/models';
               </div>
               @if (vehicle) {
                 <p class="text-xs text-slate-400 mt-1">
-                  Max: {{ vehicle.netPrice * 0.3 | currency:'EUR':'symbol':'1.0-0' }}
+                  Max: {{ +vehicle.netPrice * 0.3 | currency:'EUR':'symbol':'1.0-0' }}
                 </p>
               }
             </div>
