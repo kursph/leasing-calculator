@@ -31,4 +31,10 @@ describe('calculateEffectiveRate', () => {
     expect(isFinite(rate)).toBe(true);
     expect(isNaN(rate)).toBe(false);
   });
+
+  it('uses default advancePayment=0 when omitted', () => {
+    const withDefault = calculateEffectiveRate(25000, 600, 48, 0);
+    const withExplicit = calculateEffectiveRate(25000, 600, 48, 0, 0);
+    expect(withDefault).toBeCloseTo(withExplicit, 8);
+  });
 });

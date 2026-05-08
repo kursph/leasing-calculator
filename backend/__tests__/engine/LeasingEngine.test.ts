@@ -3,10 +3,12 @@ import {
   calculateNominalRate,
   calculateFullAmortizationPayment,
   calculatePartialAmortizationPayment,
+  calculateOperatingLeaseResidual,
   validateTermMonths,
   validateAdvancePayment,
   validateOwnContribution,
   calculateContractStampDuty,
+  OPERATING_RESIDUAL_PCT,
 } from '../../src/engine/LeasingEngine';
 
 describe('calculateGIK', () => {
@@ -102,6 +104,23 @@ describe('calculatePartialAmortizationPayment', () => {
   });
 });
 
+describe('calculateOperatingLeaseResidual', () => {
+  it('returns 30% of GIK', () => {
+    expect(calculateOperatingLeaseResidual(25000)).toBeCloseTo(25000 * OPERATING_RESIDUAL_PCT, 2);
+  });
+
+  it('rounds to 2 decimal places', () => {
+    const result = calculateOperatingLeaseResidual(33333.33);
+    expect(result).toBe(parseFloat(result.toFixed(2)));
+  });
+
+  it('scales linearly with GIK', () => {
+    const small = calculateOperatingLeaseResidual(10000);
+    const large = calculateOperatingLeaseResidual(20000);
+    expect(large).toBeCloseTo(small * 2, 2);
+  });
+});
+
 describe('validateTermMonths', () => {
   it('accepts valid term within range', () => {
     expect(validateTermMonths(48, 96)).toBeNull();
@@ -149,5 +168,10 @@ describe('calculateContractStampDuty', () => {
   it('open term: 1% × 36 × monthly rate', () => {
     const duty = calculateContractStampDuty(0, false, 500);
     expect(duty).toBe(180);
+  });
+
+  it('open term with no monthlyPayment defaults to 0', () => {
+    const duty = calculateContractStampDuty(0, false);
+    expect(duty).toBe(0);
   });
 });
