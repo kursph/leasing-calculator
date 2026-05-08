@@ -50,8 +50,11 @@ const CONFIG_KEYS = [
 export const configUpdateSchema = z
   .object(
     Object.fromEntries(
-      CONFIG_KEYS.map((k) => [k, z.string().regex(/^\d+(\.\d+)?$/, `${k} must be numeric`)])
-    ) as Record<(typeof CONFIG_KEYS)[number], z.ZodString>
+      CONFIG_KEYS.map((k) => [
+        k,
+        z.union([z.string(), z.number()]).transform((v) => String(v)),
+      ])
+    ) as unknown as Record<(typeof CONFIG_KEYS)[number], z.ZodType<string>>
   )
   .partial()
   .refine((obj) => Object.keys(obj).length > 0, 'At least one config key required');
