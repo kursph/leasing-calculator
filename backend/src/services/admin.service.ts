@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import type { SystemConfig } from '@prisma/client';
 import { calculateProfitability } from '../engine/ProfitabilityEngine';
-import { ContractStatus } from '../types';
+import { ContractStatus, DashboardKPIs } from '../types';
 import { sendApprovalNotification, sendRejectionNotification } from './email.service';
 
 const prisma = new PrismaClient();
@@ -17,7 +18,7 @@ const CONFIG_KEYS = [
 ];
 
 export class AdminService {
-  async listContracts(query: Record<string, unknown>): Promise<unknown> {
+  async listContracts(query: Record<string, unknown>): Promise<Prisma.LeasingContractGetPayload<{ include: { vehicle: true; customer: { select: { firstName: true; lastName: true; email: true } } } }>[]> {
     const where: Record<string, unknown> = {};
     if (query.status) where.status = query.status;
 
@@ -28,7 +29,7 @@ export class AdminService {
     });
   }
 
-  async getContract(contractId: string): Promise<unknown> {
+  async getContract(contractId: string): Promise<Prisma.LeasingContractGetPayload<{ include: { vehicle: true; customer: { select: { firstName: true; lastName: true; email: true } }; creditCheck: true; profitability: true; amortizationSchedule: true } }> | null> {
     return prisma.leasingContract.findUnique({
       where: { id: contractId },
       include: {
@@ -41,7 +42,7 @@ export class AdminService {
     });
   }
 
-  async approveContract(contractId: string, adminId: string): Promise<unknown> {
+  async approveContract(contractId: string, adminId: string): Promise<Prisma.LeasingContractGetPayload<{ include: { customer: true } }>> {
     const contract = await prisma.leasingContract.findUniqueOrThrow({
       where: { id: contractId },
       include: { amortizationSchedule: true },
@@ -111,7 +112,7 @@ export class AdminService {
     return result;
   }
 
-  async rejectContract(contractId: string, reason: string): Promise<unknown> {
+  async rejectContract(contractId: string, reason: string): Promise<Prisma.LeasingContractGetPayload<{ include: { customer: true } }>> {
     const updated = await prisma.leasingContract.update({
       where: { id: contractId },
       data: { status: ContractStatus.REJECTED, rejectionReason: reason },
@@ -129,14 +130,14 @@ export class AdminService {
     return updated;
   }
 
-  async getProfitability(contractId: string): Promise<unknown> {
+  async getProfitability(contractId: string): Promise<Prisma.ContractProfitabilityGetPayload<{ include: { contract: { include: { vehicle: true } } } }> | null> {
     return prisma.contractProfitability.findUnique({
       where: { contractId },
       include: { contract: { include: { vehicle: true } } },
     });
   }
 
-  async getDashboardKPIs(): Promise<unknown> {
+  async getDashboardKPIs(): Promise<DashboardKPIs> {
     const contracts = await prisma.leasingContract.findMany({
       where: { status: { in: [ContractStatus.APPROVED, ContractStatus.ACTIVE] } },
       include: { profitability: true },
@@ -178,7 +179,7 @@ export class AdminService {
     return Object.fromEntries(configs.map((c) => [c.key, c.value]));
   }
 
-  async updateConfig(updates: Record<string, string>, adminId: string): Promise<unknown> {
+  async updateConfig(updates: Record<string, string>, adminId: string): Promise<SystemConfig[]> {
     const ops = Object.entries(updates)
       .filter(([key]) => CONFIG_KEYS.includes(key))
       .map(([key, value]) =>

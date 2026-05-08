@@ -90,3 +90,31 @@ export interface QuoteResult {
   novaBreakdown: NoVAResult;
   schedule: ScheduleRow[];
 }
+
+export interface SecciData {
+  contractId: string;
+  lender: { name: string; address: string };
+  borrower: { name: string; email: string };
+  vehicle: string;
+  gik: number;
+  termMonths: number;
+  monthlyPayment: number;
+  nominalRate: number;
+  effectiveRate: number;
+  advancePayment: number;
+  residualValue: number;
+  contractFee: number;
+  vatAmount: number;
+  totalCost: number;
+  generatedAt: string;
+}
+
+export interface DashboardKPIs {
+  totalPortfolioVolume: number;
+  averageMarginPct: number;
+  averageSpread: number;
+  totalInterestIncome: number;
+  totalNetProfit: number;
+  lossMakingContracts: number;
+  contractsByStatus: Partial<Record<ContractStatus, number>>;
+}

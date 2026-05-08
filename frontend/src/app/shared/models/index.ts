@@ -64,6 +64,17 @@ export interface ScheduleRow {
   capitalAtPeriodEnd: number;
 }
 
+export interface CreditCheck {
+  id: string;
+  result: 'PASSED' | 'FAILED';
+  score: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  existingObligations: number;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface LeasingContract {
   id: string;
   contractType: ContractType;
@@ -83,6 +94,8 @@ export interface LeasingContract {
   status: ContractStatus;
   rejectionReason?: string;
   vehicle?: Vehicle;
+  customer?: User;
+  creditCheck?: CreditCheck;
   createdAt: string;
   approvedAt?: string;
 }
