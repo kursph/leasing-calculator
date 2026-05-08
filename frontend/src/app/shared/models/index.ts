@@ -82,7 +82,7 @@ export interface LeasingContract {
   vatAmount: number;
   status: ContractStatus;
   rejectionReason?: string;
-  vehicle: Vehicle;
+  vehicle?: Vehicle;
   createdAt: string;
   approvedAt?: string;
 }

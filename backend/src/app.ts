@@ -9,8 +9,17 @@ import swaggerJsdoc from 'swagger-jsdoc';
 
 const app = express();
 
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:4200' }));
+const corsOptions: cors.CorsOptions = {
+  origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200,
+};
+
+// Handle CORS preflight BEFORE helmet — Authorization header triggers preflight
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(express.json());
 
 const swaggerSpec = swaggerJsdoc({
@@ -31,7 +40,10 @@ const swaggerSpec = swaggerJsdoc({
 });
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use('/api', router);
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+}, router);
 app.use(errorHandler);
 
 export default app;

@@ -18,6 +18,10 @@ import { Vehicle } from '../../shared/models';
         <span class="badge-draft">{{ vehicles.length }} vehicles</span>
       </div>
 
+      @if (error) {
+        <div class="alert-error mb-4">{{ error }}</div>
+      }
+
       @if (loading) {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           @for (i of [1,2,3,4,5]; track i) {
@@ -87,13 +91,17 @@ import { Vehicle } from '../../shared/models';
 export class VehicleListComponent implements OnInit {
   vehicles: Vehicle[] = [];
   loading = true;
+  error = '';
 
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
     this.api.getVehicles().subscribe({
-      next: (v) => { this.vehicles = v; this.loading = false; },
-      error: () => { this.loading = false; },
+      next: (v) => { this.vehicles = v ?? []; this.loading = false; },
+      error: (err) => {
+        this.error = `Failed to load vehicles: ${err?.message || err?.status || 'network error'}`;
+        this.loading = false;
+      },
     });
   }
 }

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ApiService } from '../../shared/services/api.service';
 import { Profitability } from '../../shared/models';
 import { environment } from '../../../environments/environment';
@@ -8,7 +8,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-profitability',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, PercentPipe, RouterLink],
+  imports: [CommonModule, CurrencyPipe, RouterLink],
   template: `
     <div class="page-sm">
       @if (profitability) {
