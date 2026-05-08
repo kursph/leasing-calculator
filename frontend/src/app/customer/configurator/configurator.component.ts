@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../shared/services/api.service';
 import { Vehicle, QuoteResult } from '../../shared/models';
 
 @Component({
   selector: 'app-configurator',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, CurrencyPipe, PercentPipe],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule, CurrencyPipe, PercentPipe],
   template: `
     <div class="max-w-4xl mx-auto p-6">
       <h1 class="text-3xl font-bold mb-2">Configure Your Lease</h1>
@@ -100,9 +101,27 @@ import { Vehicle, QuoteResult } from '../../shared/models';
                 <dd>{{ quote.novaBreakdown.taxRate }}%</dd>
               </div>
             </dl>
-            <button (click)="applyNow()"
-              class="mt-6 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
-              Apply for this Lease
+
+            <!-- SECCI acknowledgment gate (§6 VKrG) -->
+            <div class="mt-4 border rounded p-3 bg-gray-50">
+              <p class="text-xs text-gray-600 mb-2 font-medium">
+                Pre-contractual information (SECCI) — §6 VKrG 2010
+              </p>
+              <label class="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="secciAcknowledged" class="mt-0.5 rounded" />
+                <span>
+                  I confirm I have received and understood the pre-contractual information,
+                  including the nominal interest rate ({{ quote.nominalRate | percent:'1.2-2' }}),
+                  effective annual rate / APR ({{ quote.effectiveRate | percent:'1.2-2' }}),
+                  total cost ({{ quote.totalCost | currency:'EUR' }}),
+                  and contract stamp duty ({{ quote.contractStampDuty | currency:'EUR' }}).
+                </span>
+              </label>
+            </div>
+
+            <button (click)="applyNow()" [disabled]="!secciAcknowledged || applying"
+              class="mt-4 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50">
+              {{ applying ? 'Submitting...' : 'Apply for this Lease' }}
             </button>
           </div>
         }
@@ -114,6 +133,8 @@ export class ConfiguratorComponent implements OnInit {
   vehicle: Vehicle | null = null;
   quote: QuoteResult | null = null;
   calculating = false;
+  applying = false;
+  secciAcknowledged = false;
   error = '';
   form: ReturnType<FormBuilder['group']>;
 
@@ -148,13 +169,14 @@ export class ConfiguratorComponent implements OnInit {
       advancePayment: advancePayment!,
       residualValue: residualValue!,
     }).subscribe({
-      next: (q) => { this.quote = q; this.calculating = false; },
+      next: (q) => { this.quote = q; this.calculating = false; this.secciAcknowledged = false; },
       error: (err) => { this.error = err.error?.message || 'Calculation failed'; this.calculating = false; },
     });
   }
 
   applyNow(): void {
-    if (!this.vehicle || !this.quote) return;
+    if (!this.vehicle || !this.quote || !this.secciAcknowledged) return;
+    this.applying = true;
     const { contractType, termMonths, advancePayment, residualValue } = this.form.value;
     this.api.applyForLease({
       vehicleId: this.vehicle.id,
@@ -164,7 +186,7 @@ export class ConfiguratorComponent implements OnInit {
       residualValue: residualValue!,
     }).subscribe({
       next: (contract: any) => this.router.navigate(['/customer/application', contract.id]),
-      error: (err: any) => { this.error = err.error?.message || 'Application failed'; },
+      error: (err: any) => { this.error = err.error?.message || 'Application failed'; this.applying = false; },
     });
   }
 }

@@ -17,10 +17,10 @@ import { environment } from '../../../environments/environment';
             <h1 class="text-3xl font-bold">Contract Details</h1>
             <p class="text-gray-500">{{ contract.vehicle?.make }} {{ contract.vehicle?.model }} — {{ contract.status }}</p>
           </div>
-          <a [href]="pdfUrl" target="_blank"
+          <button (click)="downloadPdf()"
             class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm font-medium">
             Download PDF
-          </a>
+          </button>
         </div>
 
         <div class="grid grid-cols-2 gap-4 bg-white rounded-lg shadow p-6 mb-6">
@@ -68,14 +68,20 @@ import { environment } from '../../../environments/environment';
 export class ContractDetailComponent implements OnInit {
   contract: LeasingContract | null = null;
   schedule: ScheduleRow[] = [];
-  pdfUrl = '';
+  private contractId = '';
 
   constructor(private route: ActivatedRoute, private api: ApiService) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.pdfUrl = `${environment.apiUrl}/leasing/contracts/${id}/pdf`;
-    this.api.getContract(id).subscribe((c) => (this.contract = c));
-    this.api.getSchedule(id).subscribe((s) => (this.schedule = s));
+    this.contractId = this.route.snapshot.paramMap.get('id')!;
+    this.api.getContract(this.contractId).subscribe((c) => (this.contract = c));
+    this.api.getSchedule(this.contractId).subscribe((s) => (this.schedule = s));
+  }
+
+  downloadPdf(): void {
+    this.api.downloadPdf(
+      `${environment.apiUrl}/leasing/contracts/${this.contractId}/pdf`,
+      `contract-${this.contractId}.pdf`
+    );
   }
 }

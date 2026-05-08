@@ -14,9 +14,9 @@ import { environment } from '../../../environments/environment';
       <div class="flex justify-between items-start mb-6">
         <h1 class="text-3xl font-bold">Profitability Breakdown</h1>
         @if (profitability) {
-          <a [href]="pdfUrl" target="_blank" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm">
+          <button (click)="downloadPdf()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm">
             Download PDF
-          </a>
+          </button>
         }
       </div>
 
@@ -52,13 +52,19 @@ import { environment } from '../../../environments/environment';
 })
 export class ProfitabilityComponent implements OnInit {
   profitability: Profitability | null = null;
-  pdfUrl = '';
+  private contractId = '';
 
   constructor(private route: ActivatedRoute, private api: ApiService) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.pdfUrl = `${environment.apiUrl}/admin/contracts/${id}/profitability/pdf`;
-    this.api.adminGetProfitability(id).subscribe((p) => (this.profitability = p));
+    this.contractId = this.route.snapshot.paramMap.get('id')!;
+    this.api.adminGetProfitability(this.contractId).subscribe((p) => (this.profitability = p));
+  }
+
+  downloadPdf(): void {
+    this.api.downloadPdf(
+      `${environment.apiUrl}/admin/contracts/${this.contractId}/profitability/pdf`,
+      `profitability-${this.contractId}.pdf`
+    );
   }
 }

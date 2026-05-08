@@ -56,6 +56,16 @@ export class ApiService {
     return this.http.post(`${this.base}/leasing/contracts/${id}/credit-check`, data);
   }
 
+  downloadPdf(url: string, filename: string): void {
+    this.http.get(url, { responseType: 'blob' }).subscribe((blob) => {
+      const anchor = document.createElement('a');
+      anchor.href = URL.createObjectURL(blob);
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(anchor.href);
+    });
+  }
+
   // Admin
   adminGetContracts(status?: string): Observable<LeasingContract[]> {
     const params: Record<string, string> = status ? { status } : {};
