@@ -15,33 +15,5 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: "postgresql://leasing:leasing@db:5432/leasing_db"
-      JWT_SECRET: "docker-dev-secret-change-in-prod"
-      PORT: "3000"
-      CORS_ORIGIN: "http://localhost:4200"
-      NODE_ENV: development
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "4200:80"
-    depends_on:
-      - backend
-
 volumes:
   postgres_data:

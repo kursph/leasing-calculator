@@ -25,6 +25,7 @@ import { Vehicle, QuoteResult } from '../../shared/models';
               <select formControlName="contractType" class="mt-1 block w-full border rounded px-3 py-2">
                 <option value="VOLL_AMORTISATION">Full Amortisation (Vollamortisation)</option>
                 <option value="TEIL_AMORTISATION">Partial Amortisation (Teilamortisation)</option>
+                <option value="OPERATING">Operating Lease</option>
               </select>
             </div>
             <div>
@@ -45,6 +46,11 @@ import { Vehicle, QuoteResult } from '../../shared/models';
                 <input formControlName="residualValue" type="number" min="0"
                   class="mt-1 block w-full border rounded px-3 py-2" />
               </div>
+            }
+            @if (form.get('contractType')?.value === 'OPERATING') {
+              <p class="text-xs text-amber-600 bg-amber-50 rounded p-2">
+                Operating lease: residual value is set by the lessor and not disclosed per Austrian tax law.
+              </p>
             }
             @if (error) {
               <p class="text-red-600 text-sm">{{ error }}</p>

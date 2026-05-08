@@ -67,6 +67,13 @@ export function calculatePartialAmortizationPayment(
   return Rv.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
 }
 
+// Operating lease — residual set internally at 30% GIK, never disclosed to customer (tax law)
+export const OPERATING_RESIDUAL_PCT = 0.3;
+
+export function calculateOperatingLeaseResidual(gik: number): number {
+  return new Decimal(gik).mul(OPERATING_RESIDUAL_PCT).toDecimalPlaces(2).toNumber();
+}
+
 export function calculateContractStampDuty(
   totalPayments: number,
   fixedTerm: boolean,

@@ -2,25 +2,13 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
 import { Role } from '../types';
+import { registerSchema, loginSchema } from '../schemas';
 
 const prisma = new PrismaClient();
 
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-});
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-});
-
 export async function register(req: Request, res: Response): Promise<void> {
-  const data = registerSchema.parse(req.body);
+  const data = req.body as ReturnType<typeof registerSchema.parse>;
 
   const existing = await prisma.customer.findUnique({ where: { email: data.email } });
   if (existing) {
@@ -49,7 +37,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const data = loginSchema.parse(req.body);
+  const data = req.body as ReturnType<typeof loginSchema.parse>;
 
   const customer = await prisma.customer.findUnique({ where: { email: data.email } });
   if (!customer) {

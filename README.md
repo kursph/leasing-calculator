@@ -21,17 +21,11 @@ Full-stack web application for an Austrian car leasing company. Implements Austr
 
 ## Quick Start
 
-### One command (Docker)
-
-```bash
-docker-compose up
-```
-
 - Frontend: http://localhost:4200
 - Backend API: http://localhost:3000
 - API Docs (Swagger): http://localhost:3000/api-docs
 
-Seed credentials are created automatically:
+Seed credentials:
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -40,21 +34,25 @@ Seed credentials are created automatically:
 
 ### Local Development
 
-**Prerequisites:** Node.js 22+, PostgreSQL 16
+**Prerequisites:** Node.js 22+, [Podman](https://podman.io/) (or Docker)
 
 ```bash
-# Backend
-cd backend
-cp .env.example .env          # edit DATABASE_URL if needed
-npm install
-npx prisma migrate dev
-npm run prisma:seed
-npm run dev                   # :3000
+# 1. Start the database
+podman-compose up -d db
 
-# Frontend (separate terminal)
+# 2. Backend — first time only
+cd backend
+cp .env.example .env   # defaults already match the compose DB
+npm install
+npm run setup          # pushes schema + seeds vehicles/users
+
+# 2b. Backend — every time after
+npm run dev            # :3000
+
+# 3. Frontend (separate terminal)
 cd frontend
 npm install
-npm start                     # :4200
+npm start              # :4200
 ```
 
 ## Running Tests

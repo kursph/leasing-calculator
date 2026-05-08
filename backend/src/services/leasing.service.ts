@@ -5,6 +5,7 @@ import {
   calculateNominalRate,
   calculateFullAmortizationPayment,
   calculatePartialAmortizationPayment,
+  calculateOperatingLeaseResidual,
   validateTermMonths,
   validateAdvancePayment,
   validateOwnContribution,
@@ -65,13 +66,19 @@ export class LeasingService {
 
     const effectiveGIK = new Decimal(gik).minus(input.advancePayment).toNumber();
 
+    // Operating lease: residual set internally — never exposed to customer (tax law)
+    const internalResidual =
+      input.contractType === ContractType.OPERATING
+        ? calculateOperatingLeaseResidual(effectiveGIK)
+        : input.residualValue;
+
     let monthlyPayment: number;
     if (input.contractType === ContractType.VOLL_AMORTISATION) {
       monthlyPayment = calculateFullAmortizationPayment(effectiveGIK, input.termMonths, nominalRate);
     } else {
       monthlyPayment = calculatePartialAmortizationPayment(
         effectiveGIK,
-        input.residualValue,
+        internalResidual,
         input.termMonths,
         nominalRate
       );
@@ -82,14 +89,14 @@ export class LeasingService {
       monthlyPayment,
       input.termMonths,
       nominalRate,
-      input.residualValue
+      internalResidual
     );
 
     const effectiveRate = calculateEffectiveRate(
       gik,
       monthlyPayment,
       input.termMonths,
-      input.residualValue,
+      internalResidual,
       input.advancePayment
     );
 
@@ -103,10 +110,12 @@ export class LeasingService {
       monthlyPayment,
       nominalRate,
       effectiveRate,
-      totalCost: new Decimal(totalPayments).plus(input.advancePayment).plus(input.residualValue).toNumber(),
+      totalCost: new Decimal(totalPayments).plus(input.advancePayment).toNumber(),
       contractStampDuty,
       vatAmount,
       novaBreakdown: novaResult,
+      // Operating lease: residual omitted from customer-facing response (tax law)
+      ...(input.contractType !== ContractType.OPERATING && { residualValue: internalResidual }),
       schedule,
     };
   }
@@ -115,7 +124,13 @@ export class LeasingService {
     const quote = await this.calculateQuote(input);
     const config = await this.getSystemConfig();
 
-    const vehicle = await prisma.vehicle.findUniqueOrThrow({ where: { id: input.vehicleId } });
+    await prisma.vehicle.findUniqueOrThrow({ where: { id: input.vehicleId } });
+
+    // Resolve true residual stored on contract (operating lease uses internal value)
+    const storedResidual =
+      input.contractType === ContractType.OPERATING
+        ? calculateOperatingLeaseResidual(quote.gik)
+        : input.residualValue;
 
     return prisma.$transaction(async (tx) => {
       const contract = await tx.leasingContract.create({
@@ -125,7 +140,7 @@ export class LeasingService {
           contractType: input.contractType,
           gik: quote.gik,
           novaAmount: quote.novaBreakdown.novaAmount,
-          residualValue: input.residualValue,
+          residualValue: storedResidual,
           termMonths: input.termMonths,
           nominalRate: quote.nominalRate,
           effectiveRate: quote.effectiveRate,

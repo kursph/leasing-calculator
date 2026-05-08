@@ -4,12 +4,15 @@
   "description": "Austrian Car Leasing Platform - Backend API",
   "main": "dist/server.js",
   "scripts": {
+    "setup": "npx prisma db push --skip-generate && npm run prisma:seed",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest --forceExit",
+    "test:unit": "jest --testPathPattern=engine --forceExit",
+    "test:integration": "jest --testPathPattern=integration --forceExit",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --forceExit",
+    "test:coverage": "jest --testPathPattern=engine --coverage --forceExit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
@@ -56,14 +59,28 @@
     "testEnvironment": "node",
     "roots": ["<rootDir>/__tests__"],
     "testMatch": ["**/*.test.ts"],
-    "collectCoverageFrom": ["src/engine/**/*.ts"],
-    "coverageThreshold": {
-      "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
+    "projects": [
+      {
+        "displayName": "unit",
+        "preset": "ts-jest",
+        "testEnvironment": "node",
+        "testMatch": ["<rootDir>/__tests__/engine/**/*.test.ts"],
+        "collectCoverageFrom": ["<rootDir>/src/engine/**/*.ts"],
+        "coverageThreshold": {
+          "global": {
+            "branches": 100,
+            "functions": 100,
+            "lines": 100,
+            "statements": 100
+          }
+        }
+      },
+      {
+        "displayName": "integration",
+        "preset": "ts-jest",
+        "testEnvironment": "node",
+        "testMatch": ["<rootDir>/__tests__/integration/**/*.test.ts"]
       }
-    }
+    ]
   }
 }

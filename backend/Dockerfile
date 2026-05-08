@@ -14,4 +14,4 @@ RUN npm run build
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed && node dist/server.js"]
+CMD ["sh", "-c", "until npx prisma db push --skip-generate; do echo 'DB not ready, retrying...'; sleep 3; done && npm run prisma:seed && node dist/server.js"]

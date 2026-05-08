@@ -6,6 +6,6 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
-  console.error(err);
+  if (process.env.NODE_ENV !== 'test') console.error(err);
   res.status(500).json({ error: err.message || 'Internal server error' });
 }

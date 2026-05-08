@@ -6,10 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Backend (`backend/`)
 ```bash
+npm run setup          # first-time only: push schema to DB + seed
 npm run dev            # dev server with hot reload
 npm run build          # tsc compile to dist/
-npm test               # run all Jest tests
-npm run test:coverage  # run tests + enforce 100% coverage on src/engine/**
+npm test                      # run all Jest tests (unit + integration)
+npm run test:unit             # engine unit tests only
+npm run test:integration      # supertest integration tests only (Prisma mocked)
+npm run test:coverage         # engine unit tests with 100% coverage enforcement
 npx jest --testPathPattern="LeasingEngine"  # run single test file
 npm run prisma:migrate # apply DB migrations
 npm run prisma:seed    # seed DB (vehicles, admin user, system config)
