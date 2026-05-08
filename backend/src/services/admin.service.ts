@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { calculateProfitability } from '../engine/ProfitabilityEngine';
 import { ContractStatus } from '../types';
+import { sendApprovalNotification, sendRejectionNotification } from './email.service';
 
 const prisma = new PrismaClient();
 
@@ -69,7 +70,7 @@ export class AdminService {
     });
 
     // Atomic: update status + create profitability record
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const updated = await tx.leasingContract.update({
         where: { id: contractId },
         data: {
@@ -77,6 +78,7 @@ export class AdminService {
           approvedAt: new Date(),
           approvedBy: adminId,
         },
+        include: { customer: true },
       });
 
       await tx.contractProfitability.create({
@@ -97,13 +99,34 @@ export class AdminService {
 
       return updated;
     });
+
+    // Fire-and-forget: email failure must not roll back the approval
+    sendApprovalNotification(
+      result.customer.email,
+      `${result.customer.firstName} ${result.customer.lastName}`,
+      contractId,
+      Number(result.monthlyPayment)
+    ).catch((err) => console.error('[EMAIL] Approval notification failed:', err));
+
+    return result;
   }
 
   async rejectContract(contractId: string, reason: string): Promise<unknown> {
-    return prisma.leasingContract.update({
+    const updated = await prisma.leasingContract.update({
       where: { id: contractId },
       data: { status: ContractStatus.REJECTED, rejectionReason: reason },
+      include: { customer: true },
     });
+
+    // §7 VKrG: notify applicant of rejection with reason
+    sendRejectionNotification(
+      updated.customer.email,
+      `${updated.customer.firstName} ${updated.customer.lastName}`,
+      contractId,
+      reason
+    ).catch((err) => console.error('[EMAIL] Rejection notification failed:', err));
+
+    return updated;
   }
 
   async getProfitability(contractId: string): Promise<unknown> {

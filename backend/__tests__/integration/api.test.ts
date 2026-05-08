@@ -477,10 +477,15 @@ describe('PUT /api/admin/contracts/:id/approve', () => {
       ...mockContract,
       amortizationSchedule: mockScheduleRows,
     });
+    const mockCustomerData = { email: 'test@example.com', firstName: 'Max', lastName: 'Mustermann' };
     (prisma.$transaction as jest.Mock).mockImplementation(async (fn: Function) =>
       fn({
         leasingContract: {
-          update: jest.fn().mockResolvedValue({ ...mockContract, status: ContractStatus.APPROVED }),
+          update: jest.fn().mockResolvedValue({
+            ...mockContract,
+            status: ContractStatus.APPROVED,
+            customer: mockCustomerData,
+          }),
         },
         contractProfitability: { create: jest.fn().mockResolvedValue({ id: 'prof-1' }) },
       })
@@ -510,6 +515,7 @@ describe('PUT /api/admin/contracts/:id/reject', () => {
       ...mockContract,
       status: ContractStatus.REJECTED,
       rejectionReason: 'Credit score insufficient',
+      customer: { email: 'test@example.com', firstName: 'Max', lastName: 'Mustermann' },
     });
 
     const res = await request(app)
