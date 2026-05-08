@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { JwtPayload, Role } from '../types';
 
+const JWT_SECRET = process.env['JWT_SECRET'];
+if (!JWT_SECRET) throw new Error('JWT_SECRET env var not set');
+
 declare global {
   namespace Express {
     interface Request {
@@ -19,7 +22,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
 
   const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    const payload = jwt.verify(token, JWT_SECRET as string) as unknown as JwtPayload;
     req.user = payload;
     next();
   } catch {

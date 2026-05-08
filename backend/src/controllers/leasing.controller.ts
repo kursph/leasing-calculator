@@ -54,7 +54,7 @@ export async function downloadContractPdf(req: Request, res: Response): Promise<
     return;
   }
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="contract-${req.params['id'] as string}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="contract-${encodeURIComponent(req.params['id'] as string)}.pdf"`);
   await pdfService.generateContractPdf(contract, res);
 }
 

@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import type { LeasingContract as PrismaLeasingContract, AmortizationRow, CreditCheck as PrismaCreditCheck } from '@prisma/client';
 import { calculateNoVA } from '../engine/NovaCalculator';
 import {
   calculateGIK,
@@ -13,7 +14,7 @@ import {
 } from '../engine/LeasingEngine';
 import { generateSchedule } from '../engine/AmortizationSchedule';
 import { calculateEffectiveRate } from '../engine/EffectiveRateCalculator';
-import { ContractType, ContractStatus, QuoteInput, QuoteResult } from '../types';
+import { ContractType, ContractStatus, QuoteInput, QuoteResult, SecciData } from '../types';
 import Decimal from 'decimal.js';
 
 const prisma = new PrismaClient();
@@ -120,16 +121,17 @@ export class LeasingService {
     };
   }
 
-  async createApplication(customerId: string, input: QuoteInput & { deposit?: number }): Promise<unknown> {
+  async createApplication(customerId: string, input: QuoteInput & { deposit?: number }): Promise<PrismaLeasingContract> {
     const quote = await this.calculateQuote(input);
     const config = await this.getSystemConfig();
 
     await prisma.vehicle.findUniqueOrThrow({ where: { id: input.vehicleId } });
 
     // Resolve true residual stored on contract (operating lease uses internal value)
+    const effectiveGIK = new Decimal(quote.gik).minus(input.advancePayment).toNumber();
     const storedResidual =
       input.contractType === ContractType.OPERATING
-        ? calculateOperatingLeaseResidual(quote.gik)
+        ? calculateOperatingLeaseResidual(effectiveGIK)
         : input.residualValue;
 
     return prisma.$transaction(async (tx) => {
@@ -173,7 +175,7 @@ export class LeasingService {
     });
   }
 
-  async getCustomerContracts(customerId: string): Promise<unknown> {
+  async getCustomerContracts(customerId: string): Promise<Prisma.LeasingContractGetPayload<{ include: { vehicle: true } }>[]> {
     return prisma.leasingContract.findMany({
       where: { customerId },
       include: { vehicle: true },
@@ -181,14 +183,14 @@ export class LeasingService {
     });
   }
 
-  async getContract(contractId: string, customerId: string): Promise<unknown> {
+  async getContract(contractId: string, customerId: string): Promise<Prisma.LeasingContractGetPayload<{ include: { vehicle: true; creditCheck: true } }> | null> {
     return prisma.leasingContract.findFirst({
       where: { id: contractId, customerId },
       include: { vehicle: true, creditCheck: true },
     });
   }
 
-  async getSchedule(contractId: string, customerId: string): Promise<unknown> {
+  async getSchedule(contractId: string, customerId: string): Promise<AmortizationRow[] | null> {
     const contract = await prisma.leasingContract.findFirst({
       where: { id: contractId, customerId },
     });
@@ -200,7 +202,7 @@ export class LeasingService {
     });
   }
 
-  async generateSecci(contractId: string, customerId: string): Promise<unknown> {
+  async generateSecci(contractId: string, customerId: string): Promise<SecciData | null> {
     const contract = await prisma.leasingContract.findFirst({
       where: { id: contractId, customerId },
       include: { vehicle: true, customer: true },
@@ -243,7 +245,7 @@ export class LeasingService {
       idDocumentUrl?: string;
       incomeProofUrl?: string;
     }
-  ): Promise<unknown> {
+  ): Promise<PrismaCreditCheck> {
     const contract = await prisma.leasingContract.findFirst({
       where: { id: contractId, customerId },
     });

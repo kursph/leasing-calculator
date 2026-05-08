@@ -67,7 +67,7 @@ export async function downloadProfitabilityPdf(req: Request, res: Response): Pro
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="profitability-${req.params.id}.pdf"`
+    `attachment; filename="profitability-${encodeURIComponent(req.params['id'] as string)}.pdf"`
   );
   await pdfService.generateProfitabilityPdf(profitability, res);
 }

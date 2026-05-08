@@ -20,6 +20,7 @@ export function validateQuery(schema: ZodSchema) {
       res.status(400).json({ error: 'Validation failed', details: result.error.issues });
       return;
     }
+    req.query = result.data as typeof req.query;
     next();
   };
 }
