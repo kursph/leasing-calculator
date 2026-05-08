@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma';
 import { Role } from '../types';
 import { registerSchema, loginSchema } from '../schemas';
 
-const prisma = new PrismaClient();
+const JWT_SECRET = process.env['JWT_SECRET'];
+if (!JWT_SECRET) throw new Error('JWT_SECRET env var not set');
 
 export async function register(req: Request, res: Response): Promise<void> {
   const data = req.body as ReturnType<typeof registerSchema.parse>;
@@ -29,7 +30,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   const token = jwt.sign(
     { userId: customer.id, email: customer.email, role: customer.role },
-    process.env.JWT_SECRET!,
+    JWT_SECRET as string,
     { expiresIn: '7d' }
   );
 
@@ -53,7 +54,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
   const token = jwt.sign(
     { userId: customer.id, email: customer.email, role: customer.role as Role },
-    process.env.JWT_SECRET!,
+    JWT_SECRET as string,
     { expiresIn: '7d' }
   );
 

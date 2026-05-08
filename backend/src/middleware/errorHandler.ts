@@ -7,5 +7,5 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   if (process.env.NODE_ENV !== 'test') console.error(err);
-  res.status(500).json({ error: err.message || 'Internal server error' });
+  res.status(500).json({ error: 'Internal server error' });
 }

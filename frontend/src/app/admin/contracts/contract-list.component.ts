@@ -79,7 +79,7 @@ import { LeasingContract } from '../../shared/models';
   `,
 })
 export class AdminContractListComponent implements OnInit {
-  contracts: (LeasingContract & { customer?: any })[] = [];
+  contracts: LeasingContract[] = [];
   statusFilter = '';
   statuses = ['', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'ACTIVE', 'CLOSED', 'DRAFT'];
 
@@ -90,7 +90,7 @@ export class AdminContractListComponent implements OnInit {
   filterBy(s: string): void { this.statusFilter = s; this.load(); }
 
   load(): void {
-    this.api.adminGetContracts(this.statusFilter || undefined).subscribe((c) => (this.contracts = c as any));
+    this.api.adminGetContracts(this.statusFilter || undefined).subscribe((c) => (this.contracts = c));
   }
 
   badgeClass(status: string): string {

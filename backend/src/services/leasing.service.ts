@@ -1,5 +1,6 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { LeasingContract as PrismaLeasingContract, AmortizationRow, CreditCheck as PrismaCreditCheck } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { calculateNoVA } from '../engine/NovaCalculator';
 import {
   calculateGIK,
@@ -16,8 +17,6 @@ import { generateSchedule } from '../engine/AmortizationSchedule';
 import { calculateEffectiveRate } from '../engine/EffectiveRateCalculator';
 import { ContractType, ContractStatus, QuoteInput, QuoteResult, SecciData } from '../types';
 import Decimal from 'decimal.js';
-
-const prisma = new PrismaClient();
 
 export class LeasingService {
   private async getSystemConfig(): Promise<Record<string, number>> {
@@ -266,7 +265,7 @@ export class LeasingService {
         idDocumentUrl: data.idDocumentUrl,
         incomeProofUrl: data.incomeProofUrl,
         result: passes ? 'PASSED' : 'FAILED',
-        score: Math.min(100, Math.round((disposable / Number(contract.monthlyPayment)) * 50)),
+        score: Math.round(Math.min(100, (disposable / Number(contract.monthlyPayment)) * 50)),
         notes: passes ? undefined : 'Insufficient disposable income per KSV simulation',
       },
       update: {
@@ -276,7 +275,7 @@ export class LeasingService {
         idDocumentUrl: data.idDocumentUrl,
         incomeProofUrl: data.incomeProofUrl,
         result: passes ? 'PASSED' : 'FAILED',
-        score: Math.min(100, Math.round((disposable / Number(contract.monthlyPayment)) * 50)),
+        score: Math.round(Math.min(100, (disposable / Number(contract.monthlyPayment)) * 50)),
         notes: passes ? null : 'Insufficient disposable income per KSV simulation',
       },
     });

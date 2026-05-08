@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 
+interface JsonTransportInfo { message: string }
+
 // Dev: logs to console + captures via Ethereal (https://ethereal.email)
 // Prod: set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS env vars
 function createTransport() {
@@ -23,7 +25,7 @@ async function send(to: string, subject: string, html: string): Promise<void> {
   // When using the JSON transport, info.message contains the raw mail object
   if (!process.env.SMTP_HOST && process.env.NODE_ENV !== 'test') {
     console.log(`[EMAIL] To: ${to} | Subject: ${subject}`);
-    console.log(`[EMAIL] Preview: ${(info as any).message}`);
+    console.log(`[EMAIL] Preview: ${(info as unknown as JsonTransportInfo).message}`);
   }
 }
 

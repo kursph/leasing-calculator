@@ -1,10 +1,9 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { SystemConfig } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { calculateProfitability } from '../engine/ProfitabilityEngine';
 import { ContractStatus, DashboardKPIs } from '../types';
 import { sendApprovalNotification, sendRejectionNotification } from './email.service';
-
-const prisma = new PrismaClient();
 
 const CONFIG_KEYS = [
   'EURIBOR_RATE',
