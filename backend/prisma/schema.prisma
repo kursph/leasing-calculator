@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum ContractType {
+  VOLL_AMORTISATION
+  TEIL_AMORTISATION
+  OPERATING
+}
+
+enum ContractStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  ACTIVE
+  CLOSED
+}
+
+model Vehicle {
+  id                String            @id @default(uuid())
+  make              String
+  model             String
+  year              Int
+  netPrice          Decimal           @db.Decimal(12, 2)
+  co2Emissions      Int
+  novaRate          Decimal           @db.Decimal(5, 2)
+  usefulLifeMonths  Int
+  imageUrl          String?
+  contracts         LeasingContract[]
+  createdAt         DateTime          @default(now())
+}
+
+model Customer {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role              @default(CUSTOMER)
+  contracts    LeasingContract[]
+  creditChecks CreditCheck[]
+  createdAt    DateTime          @default(now())
+}
+
+model LeasingContract {
+  id           String         @id @default(uuid())
+  customerId   String
+  vehicleId    String
+  customer     Customer       @relation(fields: [customerId], references: [id])
+  vehicle      Vehicle        @relation(fields: [vehicleId], references: [id])
+  contractType ContractType
+  gik          Decimal        @db.Decimal(12, 2)
+  novaAmount   Decimal        @db.Decimal(10, 2)
+  residualValue Decimal       @db.Decimal(12, 2)
+  termMonths   Int
+  nominalRate  Decimal        @db.Decimal(6, 4)
+  effectiveRate Decimal       @db.Decimal(6, 4)
+  monthlyPayment Decimal      @db.Decimal(10, 2)
+  advancePayment Decimal      @db.Decimal(10, 2) @default(0)
+  deposit      Decimal        @db.Decimal(10, 2)  @default(0)
+
+  euriborRate  Decimal        @db.Decimal(6, 4)
+  lenderMargin Decimal        @db.Decimal(6, 4)
+  liquidityCost Decimal       @db.Decimal(6, 4)
+  riskPremium  Decimal        @db.Decimal(6, 4)
+
+  contractFee  Decimal        @db.Decimal(10, 2)
+  vatAmount    Decimal        @db.Decimal(10, 2)
+
+  status           ContractStatus  @default(DRAFT)
+  rejectionReason  String?
+
+  amortizationSchedule AmortizationRow[]
+  profitability        ContractProfitability?
+  creditCheck          CreditCheck?
+
+  createdAt    DateTime       @default(now())
+  approvedAt   DateTime?
+  approvedBy   String?
+}
+
+model AmortizationRow {
+  id                  String          @id @default(uuid())
+  contractId          String
+  contract            LeasingContract @relation(fields: [contractId], references: [id])
+  period              Int
+  payment             Decimal         @db.Decimal(10, 2)
+  interest            Decimal         @db.Decimal(10, 2)
+  principal           Decimal         @db.Decimal(10, 2)
+  capitalAfterPayment Decimal         @db.Decimal(12, 2)
+  capitalAtPeriodEnd  Decimal         @db.Decimal(12, 2)
+}
+
+model ContractProfitability {
+  id                  String          @id @default(uuid())
+  contractId          String          @unique
+  contract            LeasingContract @relation(fields: [contractId], references: [id])
+  totalPayments       Decimal         @db.Decimal(14, 2)
+  totalInterestIncome Decimal         @db.Decimal(12, 2)
+  refinancingCost     Decimal         @db.Decimal(12, 2)
+  operatingCost       Decimal         @db.Decimal(10, 2)
+  contractFeeIncome   Decimal         @db.Decimal(10, 2)
+  residualValueIncome Decimal         @db.Decimal(12, 2)
+  netMargin           Decimal         @db.Decimal(12, 2)
+  marginPct           Decimal         @db.Decimal(6, 4)
+  spread              Decimal         @db.Decimal(6, 4)
+  isProfit            Boolean
+  calculatedAt        DateTime        @default(now())
+}
+
+model CreditCheck {
+  id                  String          @id @default(uuid())
+  customerId          String
+  contractId          String          @unique
+  customer            Customer        @relation(fields: [customerId], references: [id])
+  contract            LeasingContract @relation(fields: [contractId], references: [id])
+  monthlyIncome       Decimal         @db.Decimal(10, 2)
+  monthlyExpenses     Decimal         @db.Decimal(10, 2)
+  existingObligations Decimal         @db.Decimal(10, 2)
+  idDocumentUrl       String?
+  incomeProofUrl      String?
+  result              String
+  score               Int?
+  notes               String?
+  checkedAt           DateTime        @default(now())
+}
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+}
