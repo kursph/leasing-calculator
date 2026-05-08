@@ -8,6 +8,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
 const app = express();
+app.set('etag', false);
 
 const corsOptions: cors.CorsOptions = {
   origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
@@ -41,7 +42,9 @@ const swaggerSpec = swaggerJsdoc({
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api', (_req, res, next) => {
-  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   next();
 }, router);
 app.use(errorHandler);

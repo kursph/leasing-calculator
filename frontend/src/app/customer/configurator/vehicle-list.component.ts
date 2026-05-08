@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../shared/services/api.service';
@@ -41,7 +41,6 @@ import { Vehicle } from '../../shared/models';
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         @for (vehicle of vehicles; track vehicle.id) {
           <div class="card hover:shadow-md hover:border-indigo-200 transition-all duration-200 flex flex-col">
-            <!-- Header -->
             <div class="flex items-start justify-between mb-4">
               <div>
                 <h2 class="font-bold text-slate-900">{{ vehicle.make }} {{ vehicle.model }}</h2>
@@ -56,8 +55,6 @@ import { Vehicle } from '../../shared/models';
                 </svg>
               </div>
             </div>
-
-            <!-- Specs -->
             <div class="space-y-2 flex-1 mb-5">
               <div class="dl-row">
                 <span class="dl-label">Net Price</span>
@@ -78,7 +75,6 @@ import { Vehicle } from '../../shared/models';
                 <span class="dl-value">{{ vehicle.novaRate }}%</span>
               </div>
             </div>
-
             <a [routerLink]="['/customer/configurator', vehicle.id]" class="btn-primary w-full text-center">
               Configure Lease
             </a>
@@ -93,15 +89,18 @@ export class VehicleListComponent implements OnInit {
   loading = true;
   error = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private zone: NgZone) {}
 
   ngOnInit(): void {
     this.api.getVehicles().subscribe({
-      next: (v) => { this.vehicles = v ?? []; this.loading = false; },
-      error: (err) => {
-        this.error = `Failed to load vehicles: ${err?.message || err?.status || 'network error'}`;
+      next: (v) => this.zone.run(() => {
+        this.vehicles = v ?? [];
         this.loading = false;
-      },
+      }),
+      error: (err) => this.zone.run(() => {
+        this.error = `Failed to load: ${err?.status ?? 'network error'}`;
+        this.loading = false;
+      }),
     });
   }
 }

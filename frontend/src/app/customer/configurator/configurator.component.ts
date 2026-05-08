@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
@@ -189,7 +189,8 @@ export class ConfiguratorComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
-    private api: ApiService
+    private api: ApiService,
+    private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group({
       contractType: ['VOLL_AMORTISATION', Validators.required],
@@ -201,7 +202,10 @@ export class ConfiguratorComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('vehicleId')!;
-    this.api.getVehicle(id).subscribe((v) => (this.vehicle = v));
+    this.api.getVehicle(id).subscribe((v) => {
+      this.vehicle = v;
+      this.cdr.detectChanges();
+    });
   }
 
   calculate(): void {
@@ -216,8 +220,17 @@ export class ConfiguratorComponent implements OnInit {
       advancePayment: advancePayment!,
       residualValue: residualValue!,
     }).subscribe({
-      next: (q) => { this.quote = q; this.calculating = false; this.secciAcknowledged = false; },
-      error: (err) => { this.error = err.error?.message || err.error?.error || 'Calculation failed'; this.calculating = false; },
+      next: (q) => {
+        this.quote = q;
+        this.calculating = false;
+        this.secciAcknowledged = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err.error?.message || err.error?.error || 'Calculation failed';
+        this.calculating = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 

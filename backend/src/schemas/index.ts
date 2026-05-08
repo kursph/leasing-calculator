@@ -14,7 +14,7 @@ export const loginSchema = z.object({
 });
 
 export const quoteSchema = z.object({
-  vehicleId: z.string().uuid(),
+  vehicleId: z.string().min(1),
   contractType: z.nativeEnum(ContractType),
   termMonths: z.number().int().min(38).max(84),
   advancePayment: z.number().min(0),
