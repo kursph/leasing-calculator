@@ -546,6 +546,39 @@ describe('PUT /api/admin/contracts/:id/reject', () => {
   });
 });
 
+// ─── Admin: profitability preview ────────────────────────────────────────────
+
+describe('GET /api/admin/contracts/:id/profitability-preview', () => {
+  it('returns projected profitability without persisting', async () => {
+    (prisma.leasingContract.findUniqueOrThrow as jest.Mock).mockResolvedValue({
+      ...mockContract,
+      amortizationSchedule: mockScheduleRows,
+    });
+    (prisma.systemConfig.findMany as jest.Mock).mockResolvedValue(mockSystemConfigs);
+
+    const res = await request(app)
+      .get(`/api/admin/contracts/${CONTRACT_ID}/profitability-preview`)
+      .set('Authorization', `Bearer ${adminToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('netMargin');
+    expect(res.body).toHaveProperty('marginPct');
+    expect(res.body).toHaveProperty('spread');
+    expect(res.body).toHaveProperty('totalInterestIncome');
+    expect(res.body).toHaveProperty('isProfit');
+    // Must NOT have created any DB record
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 for CUSTOMER token', async () => {
+    const res = await request(app)
+      .get(`/api/admin/contracts/${CONTRACT_ID}/profitability-preview`)
+      .set('Authorization', `Bearer ${customerToken()}`);
+
+    expect(res.status).toBe(403);
+  });
+});
+
 // ─── Admin: dashboard + config ────────────────────────────────────────────────
 
 describe('GET /api/admin/dashboard', () => {

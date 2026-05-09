@@ -129,6 +129,35 @@ export class AdminService {
     return updated;
   }
 
+  async previewProfitability(contractId: string): Promise<import('../types').ProfitabilityResult> {
+    const contract = await prisma.leasingContract.findUniqueOrThrow({
+      where: { id: contractId },
+      include: { amortizationSchedule: true },
+    });
+
+    const configs = await prisma.systemConfig.findMany();
+    const config = Object.fromEntries(configs.map((c) => [c.key, parseFloat(c.value)]));
+
+    return calculateProfitability({
+      gik: Number(contract.gik),
+      monthlyPayment: Number(contract.monthlyPayment),
+      termMonths: contract.termMonths,
+      nominalRate: Number(contract.nominalRate),
+      euriborRate: Number(contract.euriborRate),
+      lenderMargin: Number(contract.lenderMargin),
+      residualValue: Number(contract.residualValue),
+      schedule: contract.amortizationSchedule.map((r) => ({
+        period: r.period,
+        payment: Number(r.payment),
+        interest: Number(r.interest),
+        principal: Number(r.principal),
+        capitalAfterPayment: Number(r.capitalAfterPayment),
+        capitalAtPeriodEnd: Number(r.capitalAtPeriodEnd),
+      })),
+      operatingCostConfig: config['OPERATING_COST_PER_CONTRACT'] ?? 0,
+    });
+  }
+
   async getProfitability(contractId: string): Promise<Prisma.ContractProfitabilityGetPayload<{ include: { contract: { include: { vehicle: true } } } }> | null> {
     return prisma.contractProfitability.findUnique({
       where: { contractId },
