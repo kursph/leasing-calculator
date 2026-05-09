@@ -31,6 +31,7 @@ const swaggerSpec = swaggerJsdoc({
       version: '1.0.0',
       description: 'KFZ Leasing Platform API — VÖL / VKrG 2010 compliant',
     },
+    servers: [{ url: '/api' }],
     components: {
       securitySchemes: {
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
