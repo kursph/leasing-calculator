@@ -3,7 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../shared/services/api.service';
-import { LeasingContract } from '../../shared/models';
+import { LeasingContract, Profitability } from '../../shared/models';
 
 @Component({
   selector: 'app-admin-contract-detail',
@@ -105,6 +105,50 @@ import { LeasingContract } from '../../shared/models';
           </div>
         </div>
 
+        <!-- Profitability preview (UNDER_REVIEW only) -->
+        @if (contract.status === 'UNDER_REVIEW') {
+          <div class="card border-indigo-200 bg-indigo-50/40 mb-5">
+            <h2 class="mb-1">Projected Profitability</h2>
+            <p class="text-xs text-slate-500 mb-4">Calculated from current rates — not yet stored. Finalised on approval.</p>
+            @if (preview) {
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div class="stat-card">
+                  <span class="stat-label">Net Margin</span>
+                  <span [class]="preview.isProfit ? 'stat-value text-emerald-600' : 'stat-value text-red-600'">
+                    {{ preview.netMargin | currency:'EUR' }}
+                  </span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Margin %</span>
+                  <span [class]="preview.isProfit ? 'stat-value text-emerald-600' : 'stat-value text-red-600'">
+                    {{ preview.marginPct | number:'1.2-2' }}%
+                  </span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Spread</span>
+                  <span class="stat-value text-indigo-600">{{ (preview.spread * 100) | number:'1.3-3' }}%</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Interest Income</span>
+                  <span class="stat-value">{{ preview.totalInterestIncome | currency:'EUR' }}</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 text-sm">
+                <div class="dl-row"><span class="dl-label">Total Payments</span><span class="dl-value">{{ preview.totalPayments | currency:'EUR' }}</span></div>
+                <div class="dl-row"><span class="dl-label">Refinancing Cost</span><span class="dl-value text-red-500">{{ preview.refinancingCost | currency:'EUR' }}</span></div>
+                <div class="dl-row"><span class="dl-label">Contract Fee Income</span><span class="dl-value">{{ preview.contractFeeIncome | currency:'EUR' }}</span></div>
+              </div>
+              @if (!preview.isProfit) {
+                <div class="alert-error mt-4">
+                  Warning: this contract projects a loss. Review rates before approving.
+                </div>
+              }
+            } @else {
+              <div class="text-sm text-slate-400 animate-pulse">Calculating…</div>
+            }
+          </div>
+        }
+
         <!-- Decision panel -->
         @if (contract.status === 'UNDER_REVIEW') {
           <div class="card border-amber-200 bg-amber-50/50">
@@ -159,6 +203,7 @@ import { LeasingContract } from '../../shared/models';
 })
 export class AdminContractDetailComponent implements OnInit {
   contract: LeasingContract | null = null;
+  preview: Profitability | null = null;
   acting = false;
   showReject = false;
   rejectReason = '';
@@ -169,7 +214,12 @@ export class AdminContractDetailComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
-    this.api.adminGetContract(id).subscribe((c) => (this.contract = c));
+    this.api.adminGetContract(id).subscribe((c) => {
+      this.contract = c;
+      if (c.status === 'UNDER_REVIEW') {
+        this.api.adminGetProfitabilityPreview(id).subscribe((p) => (this.preview = p));
+      }
+    });
   }
 
   approve(): void {

@@ -422,6 +422,30 @@ router.put(
 
 /**
  * @swagger
+ * /admin/contracts/{id}/profitability-preview:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Projected profitability before approval — read-only, no DB write
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Projected ProfitabilityResult (same shape as stored record, not persisted)
+ */
+router.get(
+  '/admin/contracts/:id/profitability-preview',
+  authenticate,
+  requireRole(Role.ADMIN),
+  admin.getProfitabilityPreview
+);
+
+/**
+ * @swagger
  * /admin/contracts/{id}/profitability:
  *   get:
  *     tags: [Admin]

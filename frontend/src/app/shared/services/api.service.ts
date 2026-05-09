@@ -84,6 +84,10 @@ export class ApiService {
     return this.http.put<LeasingContract>(`${this.base}/admin/contracts/${id}/reject`, { reason });
   }
 
+  adminGetProfitabilityPreview(id: string): Observable<Profitability> {
+    return this.http.get<Profitability>(`${this.base}/admin/contracts/${id}/profitability-preview`);
+  }
+
   adminGetProfitability(id: string): Observable<Profitability> {
     return this.http.get<Profitability>(`${this.base}/admin/contracts/${id}/profitability`);
   }

@@ -34,6 +34,11 @@ export async function rejectContract(req: Request, res: Response): Promise<void>
   res.json(contract);
 }
 
+export async function getProfitabilityPreview(req: Request, res: Response): Promise<void> {
+  const preview = await adminService.previewProfitability(req.params['id'] as string);
+  res.json(preview);
+}
+
 export async function getProfitability(req: Request, res: Response): Promise<void> {
   const profitability = await adminService.getProfitability(req.params['id'] as string);
   if (!profitability) {
